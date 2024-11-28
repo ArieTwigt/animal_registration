@@ -31,8 +31,64 @@ class AnimalCollection:
         self.animals_table = animals_table
 
 
-
-    def save_animals(self):
+    def save_animals(self, input_table=None):
         con = sqlite3.connect("data.db")
 
-        self.animals_table.to_sql("Animals", con, if_exists="append")
+        if input_table is not None:
+            df = pd.read_csv(f"data/{input_table}", sep=";")
+            
+            df.to_sql("Animals", 
+                                  con, 
+                                  if_exists="append",
+                                  index=False)
+        else:
+            self.animals_table.to_sql("Animals", 
+                                  con, 
+                                  if_exists="append",
+                                  index=False)
+        
+
+class CollectionImport:
+    #
+    def __init__(self, collection_name: str):
+        self.collection_name = collection_name
+        self.con = sqlite3.connect("data.db")        
+
+
+    # method to get an animal
+    def get_animal_collection(self):
+        
+        # get the animal collection
+        qry = '''
+              SELECT name, age, type, collection_name
+              FROM Animals
+              WHERE collection_name = ?
+              ORDER BY age
+              '''
+        
+        # get the data from the table
+        df_animals = pd.read_sql_query(qry, 
+                                       self.con,
+                                       params=(self.collection_name,)
+                                       )
+        
+        print(df_animals)
+
+
+def get_available_collections():
+    con = sqlite3.connect("data.db")  
+
+    # query for showing collections
+    qry = '''
+            SELECT DISTINCT(collection_name) as cname
+            FROM Animals
+            ORDER BY cname
+        '''
+    
+    # get the table with collections
+    df_collection_names = pd.read_sql_query(qry,
+                                            con)
+    
+    collections_list = df_collection_names['cname'].unique().tolist()
+
+    return collections_list
